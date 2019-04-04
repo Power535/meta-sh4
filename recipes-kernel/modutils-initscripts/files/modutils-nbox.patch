@@ -1,31 +1,43 @@
 --- a/modutils.sh	2019-03-15 06:38:14.047744000 +0300
-+++ b/modutils.sh	2019-04-03 21:54:57.149448903 +0300
-@@ -36,6 +36,83 @@
++++ b/modutils.sh	2019-04-04 16:35:03.883586407 +0300
+@@ -36,6 +36,95 @@
  		[ "$VERBOSE" != no ] && echo -n "$module "
  		eval "$LOAD_MODULE $module $args >/dev/null 2>&1"
  		loaded_modules="${loaded_modules}${module} "
 +		if [ "$module" == "boxtype" ]; then
 +			boxtype=`cat /proc/boxtype`
++			echo "boxtype $boxtype"
 +
 +			if [ $boxtype == 'bska' ]; then
++				echo "Init VFD white"
 +				modprobe vfd rec=0
 +			else
++				echo "Init VFD black"
 +				modprobe vfd rec=1
 +			fi
 +
-+			mknod -m 644 /dev/vfd c 147 0
++			mknod -m 0660 /dev/vfd c 147 0
 +			echo "LOAD" >/dev/vfd
 +			mknod -m 666 /dev/sci1 c 169 0
 +			mknod -m 666 /dev/sci1 c 169 1
 +
++			if [ $boxtype == 'BSKA' ] || [ $boxtype == 'BXZB' ]; then
++				ln -sfn /dev/dvb/adapter0/frontend2_ /dev/dvb/adapter0/frontend1
++				ln -sfn /dev/dvb/adapter0/frontend1_ /dev/dvb/adapter0/frontend2
++			else
++				ln -sfn /dev/dvb/adapter0/frontend1_ /dev/dvb/adapter0/frontend1
++				ln -sfn /dev/dvb/adapter0/frontend2_ /dev/dvb/adapter0/frontend2
++			fi
++
 +			modprobe simu_button
++			mknod /dev/rc c 147 1
 +			modprobe e2_proc
 +			modprobe stmcore-display-stx7100
 +			modprobe stmfb display0=1280x720-32@50:16m:pal:yuv:yuv
 +			modprobe embxshell
 +			modprobe embxmailbox mailbox0=0xb9211000:136:set2 mailbox1=0xb9212000:0
-+			modprobe mailbox0=shm:0:7:0x60000000:0:16:16:0:1024:0xa4000000:0x10000000
-+			modprobe transport0=shm
++			modprobe embxshm mailbox0=shm:0:7:0x60000000:0:16:16:0:1024:0xa4000000:0x10000000
++			modprobe mme_host transport0=shm
 +
 +			if [ $boxtype == 'bsla' ] || [ $boxtype == 'bzzb' ]; then
 +				modprobe cooler
@@ -50,7 +62,7 @@
 +
 +			if [ $boxtype == 'bska' ] || [ $boxtype == 'bxzb' ]; then
 +				modprobe fe-core
-+			elif [ $boxtype == 'bzzb' ]; then
++			elif [ $boxtype == 'bsla' ]; then
 +				modprobe fe-core-twin1
 +			else
 +				modprobe fe-core-twin2
@@ -84,7 +96,7 @@
  	done
  }
  
-@@ -49,4 +126,13 @@
+@@ -49,4 +138,13 @@
  done
  [ "$VERBOSE" != no ] && echo
  
